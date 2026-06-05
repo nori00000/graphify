@@ -2,13 +2,14 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja-JP.md) | [한국어](README.ko-KR.md)
 
-[![CI](https://github.com/safishamsi/graphify/actions/workflows/ci.yml/badge.svg?branch=v3)](https://github.com/safishamsi/graphify/actions/workflows/ci.yml)
+[![CI](https://github.com/safishamsi/graphify/actions/workflows/ci.yml/badge.svg?branch=v4)](https://github.com/safishamsi/graphify/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/graphifyy)](https://pypi.org/project/graphifyy/)
+[![Downloads](https://static.pepy.tech/badge/graphifyy/month)](https://pepy.tech/project/graphifyy)
 [![Sponsor](https://img.shields.io/badge/sponsor-safishamsi-ea4aaa?logo=github-sponsors)](https://github.com/sponsors/safishamsi)
 
-**AI 코딩 어시스턴트를 위한 스킬.** Claude Code, Codex, OpenCode, OpenClaw, Factory Droid, 또는 Trae에서 `/graphify`를 입력하면 파일을 읽고 지식 그래프를 구축하여, 미처 몰랐던 구조를 보여줍니다. 코드베이스를 더 빠르게 이해하고, 아키텍처 결정의 "이유"를 찾아보세요.
+**AI 코딩 어시스턴트를 위한 스킬.** Claude Code, Codex, OpenCode, Cursor, Gemini CLI, GitHub Copilot CLI, Aider, OpenClaw, Factory Droid, Trae, Hermes, 또는 Google Antigravity에서 `/graphify`를 입력하면 파일을 읽고 지식 그래프를 구축하여, 미처 몰랐던 구조를 보여줍니다. 코드베이스를 더 빠르게 이해하고, 아키텍처 결정의 "이유"를 찾아보세요.
 
-완전한 멀티모달 지원. 코드, PDF, 마크다운, 스크린샷, 다이어그램, 화이트보드 사진, 심지어 다른 언어로 된 이미지까지 — graphify는 Claude Vision을 사용하여 이 모든 것에서 개념과 관계를 추출하고 하나의 그래프로 연결합니다. tree-sitter AST를 통해 20개 언어를 지원합니다(Python, JS, TS, Go, Rust, Java, C, C++, Ruby, C#, Kotlin, Scala, PHP, Swift, Lua, Zig, PowerShell, Elixir, Objective-C, Julia).
+완전한 멀티모달 지원. 코드, PDF, 마크다운, 스크린샷, 다이어그램, 화이트보드 사진, 심지어 다른 언어로 된 이미지까지, 비디오 및 오디오 파일도 — graphify는 이 모든 것에서 개념과 관계를 추출하고 하나의 그래프로 연결합니다. 비디오는 코퍼스에서 도출한 도메인 인식 프롬프트를 사용하여 Whisper로 전사됩니다. 23개 언어를 지원합니다(22개는 tree-sitter AST, Dart는 regex 방식): Python, JS, TS, Go, Rust, Java, C, C++, Ruby, C#, Kotlin, Scala, PHP, Swift, Lua, Zig, PowerShell, Elixir, Objective-C, Julia, Vue, Svelte, Dart.
 
 > Andrej Karpathy는 논문, 트윗, 스크린샷, 메모를 모아두는 `/raw` 폴더를 관리합니다. graphify는 바로 그 문제에 대한 답입니다 — 원본 파일을 직접 읽는 것 대비 쿼리당 토큰 소비가 71.5배 적고, 세션 간에 영속적이며, 발견한 것과 추측한 것을 정직하게 구분합니다.
 
@@ -34,11 +35,11 @@ dist/
 *.generated.py
 ```
 
-`.gitignore`와 동일한 문법입니다. 패턴은 graphify를 실행한 폴더 기준의 상대 경로에 대해 매칭됩니다.
+`.gitignore`와 동일한 문법입니다. 리포지토리 루트에 `.graphifyignore` 파일 하나만 유지해도 됩니다 — graphify를 하위 폴더에서 실행하더라도 패턴이 올바르게 동작합니다.
 
 ## 동작 원리
 
-graphify는 두 번의 패스로 실행됩니다. 첫 번째는 결정론적 AST 패스로, 코드 파일에서 구조(클래스, 함수, 임포트, 콜 그래프, docstring, 근거 주석)를 LLM 없이 추출합니다. 두 번째는 Claude 서브에이전트가 문서, 논문, 이미지에 대해 병렬로 실행되어 개념, 관계, 설계 근거를 추출합니다. 결과는 NetworkX 그래프로 병합되고, Leiden 커뮤니티 탐지로 클러스터링되며, 인터랙티브 HTML, 쿼리 가능한 JSON, 그리고 일반 언어 감사 보고서로 내보내집니다.
+graphify는 세 번의 패스로 실행됩니다. 첫 번째는 결정론적 AST 패스로, 코드 파일에서 구조(클래스, 함수, 임포트, 콜 그래프, docstring, 근거 주석)를 LLM 없이 추출합니다. 두 번째는 비디오 및 오디오 파일을 코퍼스 갓 노드에서 도출한 도메인 인식 프롬프트를 사용하여 faster-whisper로 로컬에서 전사합니다 — 전사본은 캐시되므로 재실행 시 즉시 처리됩니다. 세 번째는 Claude 서브에이전트가 문서, 논문, 이미지, 전사본에 대해 병렬로 실행되어 개념, 관계, 설계 근거를 추출합니다. 결과는 NetworkX 그래프로 병합되고, Leiden 커뮤니티 탐지로 클러스터링되며, 인터랙티브 HTML, 쿼리 가능한 JSON, 그리고 일반 언어 감사 보고서로 내보내집니다.
 
 **클러스터링은 그래프 토폴로지 기반 — 임베딩을 사용하지 않습니다.** Leiden은 엣지 밀도를 기반으로 커뮤니티를 찾습니다. Claude가 추출하는 의미적 유사성 엣지(`semantically_similar_to`, INFERRED로 표시)는 이미 그래프에 포함되어 있으므로 커뮤니티 탐지에 직접 영향을 줍니다. 그래프 구조 자체가 유사성 신호이며 — 별도의 임베딩 단계나 벡터 데이터베이스가 필요하지 않습니다.
 
@@ -46,13 +47,13 @@ graphify는 두 번의 패스로 실행됩니다. 첫 번째는 결정론적 AST
 
 ## 설치
 
-**필수 요구사항:** Python 3.10+ 및 다음 중 하나: [Claude Code](https://claude.ai/code), [Codex](https://openai.com/codex), [OpenCode](https://opencode.ai), [OpenClaw](https://openclaw.ai), [Factory Droid](https://factory.ai), 또는 [Trae](https://trae.ai)
+**필수 요구사항:** Python 3.10+ 및 다음 중 하나: [Claude Code](https://claude.ai/code), [Codex](https://openai.com/codex), [OpenCode](https://opencode.ai), [Cursor](https://cursor.com), [Gemini CLI](https://github.com/google-gemini/gemini-cli), [GitHub Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli), [Aider](https://aider.chat), [OpenClaw](https://openclaw.ai), [Factory Droid](https://factory.ai), [Trae](https://trae.ai), Hermes, 또는 [Google Antigravity](https://antigravity.google)
 
 ```bash
 pip install graphifyy && graphify install
 ```
 
-> PyPI 패키지는 `graphify` 이름을 되찾는 동안 임시로 `graphifyy`로 명명되어 있습니다. CLI와 스킬 명령은 여전히 `graphify`입니다.
+> **공식 패키지:** PyPI 패키지 이름은 `graphifyy`입니다(`pip install graphifyy`로 설치). PyPI의 `graphify*` 이름의 다른 패키지는 이 프로젝트와 관련이 없습니다. 유일한 공식 저장소는 [safishamsi/graphify](https://github.com/safishamsi/graphify)입니다. CLI와 스킬 명령은 여전히 `graphify`입니다.
 
 ### 플랫폼 지원
 
@@ -62,12 +63,18 @@ pip install graphifyy && graphify install
 | Claude Code (Windows) | `graphify install` (자동 감지) 또는 `graphify install --platform windows` |
 | Codex | `graphify install --platform codex` |
 | OpenCode | `graphify install --platform opencode` |
+| GitHub Copilot CLI | `graphify install --platform copilot` |
+| Aider | `graphify install --platform aider` |
 | OpenClaw | `graphify install --platform claw` |
 | Factory Droid | `graphify install --platform droid` |
 | Trae | `graphify install --platform trae` |
 | Trae CN | `graphify install --platform trae-cn` |
+| Gemini CLI | `graphify install --platform gemini` |
+| Hermes | `graphify install --platform hermes` |
+| Cursor | `graphify cursor install` |
+| Google Antigravity | `graphify antigravity install` |
 
-Codex 사용자는 병렬 추출을 위해 `~/.codex/config.toml`의 `[features]` 아래에 `multi_agent = true`도 필요합니다. Factory Droid는 병렬 서브에이전트 디스패치에 `Task` 도구를 사용합니다. OpenClaw는 순차 추출을 사용합니다(해당 플랫폼의 병렬 에이전트 지원은 아직 초기 단계입니다). Trae는 병렬 서브에이전트 디스패치에 Agent 도구를 사용하며 PreToolUse 훅을 **지원하지 않습니다** — AGENTS.md가 상시 작동 메커니즘입니다.
+Codex 사용자는 병렬 추출을 위해 `~/.codex/config.toml`의 `[features]` 아래에 `multi_agent = true`도 필요합니다. Factory Droid는 병렬 서브에이전트 디스패치에 `Task` 도구를 사용합니다. OpenClaw, Aider, Hermes는 순차 추출을 사용합니다(해당 플랫폼의 병렬 에이전트 지원은 아직 초기 단계입니다). Trae는 병렬 서브에이전트 디스패치에 Agent 도구를 사용하며 PreToolUse 훅을 **지원하지 않습니다** — AGENTS.md가 상시 작동 메커니즘입니다.
 
 그런 다음 AI 코딩 어시스턴트를 열고 입력하세요:
 
@@ -86,16 +93,30 @@ Codex 사용자는 병렬 추출을 위해 `~/.codex/config.toml`의 `[features]
 | Claude Code | `graphify claude install` |
 | Codex | `graphify codex install` |
 | OpenCode | `graphify opencode install` |
+| GitHub Copilot CLI | `graphify copilot install` |
+| Aider | `graphify aider install` |
 | OpenClaw | `graphify claw install` |
 | Factory Droid | `graphify droid install` |
 | Trae | `graphify trae install` |
 | Trae CN | `graphify trae-cn install` |
+| Cursor | `graphify cursor install` |
+| Gemini CLI | `graphify gemini install` |
+| Hermes | `graphify hermes install` |
+| Google Antigravity | `graphify antigravity install` |
 
 **Claude Code**는 두 가지를 수행합니다: 아키텍처 질문에 답하기 전에 `graphify-out/GRAPH_REPORT.md`를 읽도록 Claude에게 지시하는 `CLAUDE.md` 섹션을 작성하고, 모든 Glob 및 Grep 호출 전에 실행되는 **PreToolUse 훅**(`settings.json`)을 설치합니다. 지식 그래프가 존재하면 Claude는 다음 메시지를 보게 됩니다: _"graphify: Knowledge graph exists. Read GRAPH_REPORT.md for god nodes and community structure before searching raw files."_ — 이를 통해 Claude는 모든 파일을 grep하는 대신 그래프를 통해 탐색합니다.
 
 **Codex**는 `AGENTS.md`에 작성하고 Bash 도구 호출 전에 실행되는 **PreToolUse 훅**을 `.codex/hooks.json`에 설치합니다 — Claude Code와 동일한 상시 작동 메커니즘입니다.
 
-**OpenCode, OpenClaw, Factory Droid, Trae**는 프로젝트 루트의 `AGENTS.md`에 동일한 규칙을 작성합니다. 이 플랫폼들은 PreToolUse 훅을 지원하지 않으므로 AGENTS.md가 상시 작동 메커니즘입니다.
+**OpenCode**는 `AGENTS.md`에 작성하고 `tool.execute.before` 플러그인(`.opencode/plugins/graphify.js`)을 설치하여 bash 도구 호출 전에 그래프 알림을 발생시킵니다.
+
+**Cursor**는 `alwaysApply: true`로 `.cursor/rules/graphify.mdc`를 작성합니다 — 훅 없이 모든 대화에 자동으로 포함됩니다.
+
+**Gemini CLI**는 `GEMINI.md` 섹션을 작성하고 `.gemini/settings.json`에 `BeforeTool` 훅을 설치합니다.
+
+**Aider, OpenClaw, Factory Droid, Trae, Hermes**는 프로젝트 루트의 `AGENTS.md`에 동일한 규칙을 작성합니다. 이 플랫폼들은 도구 훅을 지원하지 않으므로 AGENTS.md가 상시 작동 메커니즘입니다.
+
+**Google Antigravity**는 `.agent/rules/graphify.md`(상시 작동 규칙)와 `.agent/workflows/graphify.md`(`/graphify` 슬래시 명령 등록)를 작성합니다.
 
 제거는 대응하는 uninstall 명령으로 수행합니다(예: `graphify claude uninstall`).
 
@@ -142,7 +163,7 @@ python -m graphify.serve graphify-out/graph.json
 
 ```bash
 mkdir -p ~/.claude/skills/graphify
-curl -fsSL https://raw.githubusercontent.com/safishamsi/graphify/v3/graphify/skill.md \
+curl -fsSL https://raw.githubusercontent.com/safishamsi/graphify/v4/graphify/skill.md \
   > ~/.claude/skills/graphify/SKILL.md
 ```
 
@@ -195,30 +216,51 @@ graphify hook status
 graphify claude install            # CLAUDE.md + PreToolUse 훅 (Claude Code)
 graphify claude uninstall
 graphify codex install             # AGENTS.md (Codex)
-graphify opencode install          # AGENTS.md (OpenCode)
+graphify opencode install          # AGENTS.md + tool.execute.before 플러그인 (OpenCode)
+graphify cursor install            # .cursor/rules/graphify.mdc (Cursor)
+graphify cursor uninstall
+graphify gemini install            # GEMINI.md + BeforeTool 훅 (Gemini CLI)
+graphify gemini uninstall
+graphify copilot install           # 스킬 파일 (GitHub Copilot CLI)
+graphify copilot uninstall
+graphify aider install             # AGENTS.md (Aider)
+graphify aider uninstall
 graphify claw install              # AGENTS.md (OpenClaw)
+graphify claw uninstall
 graphify droid install             # AGENTS.md (Factory Droid)
 graphify trae install              # AGENTS.md (Trae)
 graphify trae uninstall
 graphify trae-cn install           # AGENTS.md (Trae CN)
 graphify trae-cn uninstall
+graphify hermes install            # AGENTS.md (Hermes)
+graphify hermes uninstall
+graphify antigravity install       # .agent/rules + .agent/workflows (Google Antigravity)
+graphify antigravity uninstall
 
 # 터미널에서 직접 그래프 쿼리 (AI 어시스턴트 불필요)
 graphify query "어텐션과 옵티마이저를 연결하는 것은?"
 graphify query "인증 흐름 보기" --dfs
 graphify query "CfgNode이 뭐지?" --budget 500
 graphify query "..." --graph path/to/graph.json
+graphify path "DigestAuth" "Response"       # 두 노드 사이 최단 경로
+graphify explain "SwinTransformer"           # 노드와 이웃의 평이한 설명
+
+# 터미널에서 콘텐츠 추가 및 그래프 업데이트
+graphify add https://arxiv.org/abs/1706.03762          # 논문 가져오기, ./raw에 저장, 그래프 업데이트
+graphify add https://... --author "Name" --contributor "Name"
 ```
 
 다양한 파일 유형의 조합과 함께 동작합니다:
 
 | 유형 | 확장자 | 추출 방식 |
 |------|--------|-----------|
-| 코드 | `.py .ts .js .jsx .tsx .go .rs .java .c .cpp .rb .cs .kt .scala .php .swift .lua .zig .ps1 .ex .exs .m .mm .jl` | tree-sitter AST + 콜 그래프 + docstring/주석 근거 |
+| 코드 | `.py .ts .js .jsx .tsx .go .rs .java .c .cpp .cc .cxx .h .hpp .rb .cs .kt .kts .scala .php .blade.php .swift .lua .toc .zig .ps1 .ex .exs .m .mm .jl .vue .svelte .dart` | tree-sitter AST (Dart는 regex) + 콜 그래프 + docstring/주석 근거; `.blade.php`는 Blade 디렉티브(`@include`), Livewire 컴포넌트, `wire:click` 바인딩도 추출 |
 | 문서 | `.md .txt .rst` | Claude를 통한 개념 + 관계 + 설계 근거 |
 | 오피스 | `.docx .xlsx` | 마크다운으로 변환 후 Claude를 통해 추출 (`pip install graphifyy[office]` 필요) |
 | 논문 | `.pdf` | 인용 마이닝 + 개념 추출 |
-| 이미지 | `.png .jpg .webp .gif` | Claude Vision - 스크린샷, 다이어그램, 모든 언어 |
+| 이미지 | `.png .jpg .jpeg .webp .gif .svg` | Claude Vision - 스크린샷, 다이어그램, 모든 언어 |
+| 비디오 / 오디오 | `.mp4 .mov .mkv .webm .avi .m4v .mp3 .wav .m4a .ogg` | faster-whisper로 로컬 전사 후 Claude 추출 (`pip install graphifyy[video]` 필요) |
+| YouTube / URL | 모든 비디오 URL | yt-dlp로 오디오 다운로드 후 동일한 Whisper 파이프라인 (`pip install graphifyy[video]` 필요) |
 
 ## 결과물
 
@@ -268,7 +310,7 @@ graphify는 그래프 레이어입니다. 그 위에 [Penpax](https://safishamsi
 
 ## 스타 히스토리
 
-[![Star History Chart](https://starchart.cc/safishamsi/graphify.svg)](https://starchart.cc/safishamsi/graphify)
+[![Star History Chart](https://api.star-history.com/svg?repos=safishamsi/graphify&type=Date)](https://star-history.com/#safishamsi/graphify&Date)
 
 <details>
 <summary>기여하기</summary>

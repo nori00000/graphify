@@ -800,8 +800,8 @@ def main() -> None:
         print("  trae-cn uninstall      remove graphify section from AGENTS.md")
         print("  antigravity install     write .agent/rules + .agent/workflows + skill (Google Antigravity)")
         print("  antigravity uninstall   remove .agent/rules, .agent/workflows, and skill")
-        print("  hermes install          write skill to ~/.hermes/skills/graphify/ (Hermes)")
-        print("  hermes uninstall        remove skill from ~/.hermes/skills/graphify/")
+        print("  hermes install          write graphify section to AGENTS.md (Hermes)")
+        print("  hermes uninstall        remove graphify section from AGENTS.md")
         print()
         return
 
