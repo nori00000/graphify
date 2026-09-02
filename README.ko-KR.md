@@ -6,6 +6,7 @@
 [![PyPI](https://img.shields.io/pypi/v/graphifyy)](https://pypi.org/project/graphifyy/)
 [![Downloads](https://static.pepy.tech/badge/graphifyy/month)](https://pepy.tech/project/graphifyy)
 [![Sponsor](https://img.shields.io/badge/sponsor-safishamsi-ea4aaa?logo=github-sponsors)](https://github.com/sponsors/safishamsi)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Safi%20Shamsi-0077B5?logo=linkedin)](https://www.linkedin.com/in/safi-shamsi)
 
 **AI 코딩 어시스턴트를 위한 스킬.** Claude Code, Codex, OpenCode, Cursor, Gemini CLI, GitHub Copilot CLI, Aider, OpenClaw, Factory Droid, Trae, Hermes, 또는 Google Antigravity에서 `/graphify`를 입력하면 파일을 읽고 지식 그래프를 구축하여, 미처 몰랐던 구조를 보여줍니다. 코드베이스를 더 빠르게 이해하고, 아키텍처 결정의 "이유"를 찾아보세요.
 
@@ -104,19 +105,19 @@ Codex 사용자는 병렬 추출을 위해 `~/.codex/config.toml`의 `[features]
 | Hermes | `graphify hermes install` |
 | Google Antigravity | `graphify antigravity install` |
 
-**Claude Code**는 두 가지를 수행합니다: 아키텍처 질문에 답하기 전에 `graphify-out/GRAPH_REPORT.md`를 읽도록 Claude에게 지시하는 `CLAUDE.md` 섹션을 작성하고, 모든 Glob 및 Grep 호출 전에 실행되는 **PreToolUse 훅**(`settings.json`)을 설치합니다. 지식 그래프가 존재하면 Claude는 다음 메시지를 보게 됩니다: _"graphify: Knowledge graph exists. Read GRAPH_REPORT.md for god nodes and community structure before searching raw files."_ — 이를 통해 Claude는 모든 파일을 grep하는 대신 그래프를 통해 탐색합니다.
+**Claude Code**는 두 가지를 수행합니다: 아키텍처 질문에 답하기 전에 `graphify-out/GRAPH_REPORT.md`를 읽도록 Claude에게 지시하는 `CLAUDE.md` 섹션을 작성하고, 모든 Glob 및 Grep 호출 전에 실행되는 **PreToolUse 훅**(`settings.json`)을 설치합니다. 지식 그래프가 존재하면 Claude는 다음 메시지를 보게 됩니다: _"graphify: Knowledge graph exists. Read graphify-out/GRAPH_REPORT.md for god nodes and community structure before searching raw files."_ — 이를 통해 Claude는 모든 파일을 grep하는 대신 그래프를 통해 탐색합니다.
 
 **Codex**는 `AGENTS.md`에 작성하고 Bash 도구 호출 전에 실행되는 **PreToolUse 훅**을 `.codex/hooks.json`에 설치합니다 — Claude Code와 동일한 상시 작동 메커니즘입니다.
 
-**OpenCode**는 `AGENTS.md`에 작성하고 `tool.execute.before` 플러그인(`.opencode/plugins/graphify.js`)을 설치하여 bash 도구 호출 전에 그래프 알림을 발생시킵니다.
+**OpenCode**는 `AGENTS.md`에 작성하고, bash 도구 호출 전에 실행되며 그래프가 존재할 때 도구 출력에 그래프 알림을 주입하는 **`tool.execute.before` 플러그인**(`.opencode/plugins/graphify.js` + `opencode.json` 등록)도 설치합니다.
 
 **Cursor**는 `alwaysApply: true`로 `.cursor/rules/graphify.mdc`를 작성합니다 — 훅 없이 모든 대화에 자동으로 포함됩니다.
 
-**Gemini CLI**는 `GEMINI.md` 섹션을 작성하고 `.gemini/settings.json`에 `BeforeTool` 훅을 설치합니다.
+**Gemini CLI**는 스킬을 `~/.gemini/skills/graphify/SKILL.md`에 복사하고, `GEMINI.md` 섹션을 작성하며, `read_file`과 `list_directory` 도구 호출 전에 실행되는 `BeforeTool` 훅을 `.gemini/settings.json`에 설치합니다 — Claude Code와 동일한 상시 작동 메커니즘입니다.
 
 **Aider, OpenClaw, Factory Droid, Trae, Hermes**는 프로젝트 루트의 `AGENTS.md`에 동일한 규칙을 작성합니다. 이 플랫폼들은 도구 훅을 지원하지 않으므로 AGENTS.md가 상시 작동 메커니즘입니다.
 
-**Google Antigravity**는 `.agent/rules/graphify.md`(상시 작동 규칙)와 `.agent/workflows/graphify.md`(`/graphify` 슬래시 명령 등록)를 작성합니다.
+**Google Antigravity**는 `.agent/rules/graphify.md`(상시 작동 규칙)와 `.agent/workflows/graphify.md`(`/graphify` 슬래시 명령 등록)를 작성합니다. Antigravity에는 훅에 해당하는 기능이 없으므로 규칙이 상시 작동 메커니즘입니다.
 
 제거는 대응하는 uninstall 명령으로 수행합니다(예: `graphify claude uninstall`).
 
@@ -156,7 +157,7 @@ graphify query "what connects DigestAuth to Response?" --graph graphify-out/grap
 python -m graphify.serve graphify-out/graph.json
 ```
 
-이를 통해 어시스턴트가 `query_graph`, `get_node`, `get_neighbors`, `shortest_path` 같은 반복 쿼리에 구조화된 그래프 접근을 할 수 있습니다.
+이를 통해 어시스턴트가 `query_graph`, `get_node`, `get_neighbors`, `get_community`, `god_nodes`, `graph_stats`, `shortest_path` 같은 반복 쿼리에 구조화된 그래프 접근을 할 수 있습니다.
 
 <details>
 <summary>수동 설치 (curl)</summary>
@@ -170,6 +171,7 @@ curl -fsSL https://raw.githubusercontent.com/safishamsi/graphify/v4/graphify/ski
 `~/.claude/CLAUDE.md`에 추가:
 
 ```
+# graphify
 - **graphify** (`~/.claude/skills/graphify/SKILL.md`) - any input to knowledge graph. Trigger: `/graphify`
 When the user types `/graphify`, invoke the Skill tool with `skill: "graphify"` before doing anything else.
 ```
@@ -183,6 +185,7 @@ When the user types `/graphify`, invoke the Skill tool with `skill: "graphify"` 
 /graphify ./raw                    # 특정 폴더에서 실행
 /graphify ./raw --mode deep        # 더 적극적인 INFERRED 엣지 추출
 /graphify ./raw --update           # 변경된 파일만 재추출하여 기존 그래프에 병합
+/graphify ./raw --directed          # 방향 그래프 빌드 (엣지 방향 보존: source→target)
 /graphify ./raw --cluster-only     # 기존 그래프의 클러스터링만 재실행, 재추출 없음
 /graphify ./raw --no-viz           # HTML 건너뛰기, 보고서 + JSON만 생성
 /graphify ./raw --obsidian                          # Obsidian 볼트도 생성 (옵트인)
@@ -216,7 +219,9 @@ graphify hook status
 graphify claude install            # CLAUDE.md + PreToolUse 훅 (Claude Code)
 graphify claude uninstall
 graphify codex install             # AGENTS.md (Codex)
+graphify codex uninstall
 graphify opencode install          # AGENTS.md + tool.execute.before 플러그인 (OpenCode)
+graphify opencode uninstall
 graphify cursor install            # .cursor/rules/graphify.mdc (Cursor)
 graphify cursor uninstall
 graphify gemini install            # GEMINI.md + BeforeTool 훅 (Gemini CLI)
@@ -228,6 +233,7 @@ graphify aider uninstall
 graphify claw install              # AGENTS.md (OpenClaw)
 graphify claw uninstall
 graphify droid install             # AGENTS.md (Factory Droid)
+graphify droid uninstall
 graphify trae install              # AGENTS.md (Trae)
 graphify trae uninstall
 graphify trae-cn install           # AGENTS.md (Trae CN)
@@ -248,6 +254,16 @@ graphify explain "SwinTransformer"           # 노드와 이웃의 평이한 설
 # 터미널에서 콘텐츠 추가 및 그래프 업데이트
 graphify add https://arxiv.org/abs/1706.03762          # 논문 가져오기, ./raw에 저장, 그래프 업데이트
 graphify add https://... --author "Name" --contributor "Name"
+
+# 증분 업데이트 및 유지보수
+graphify watch ./src                         # 코드 변경 시 자동 재빌드
+graphify update ./src                         # 코드 파일만 재추출, LLM 불필요
+graphify cluster-only ./my-project           # 기존 graph.json에서 클러스터링만 재실행
+graphify benchmark                           # 원문 코퍼스를 읽는 것 대비 토큰 절감 측정
+graphify benchmark path/to/graph.json        # 특정 그래프 파일 벤치마크
+
+# 그래프 피드백 루프를 위해 Q&A 결과 저장
+graphify save-result --question "Q" --answer "A" --type code
 ```
 
 다양한 파일 유형의 조합과 함께 동작합니다:
@@ -261,6 +277,31 @@ graphify add https://... --author "Name" --contributor "Name"
 | 이미지 | `.png .jpg .jpeg .webp .gif .svg` | Claude Vision - 스크린샷, 다이어그램, 모든 언어 |
 | 비디오 / 오디오 | `.mp4 .mov .mkv .webm .avi .m4v .mp3 .wav .m4a .ogg` | faster-whisper로 로컬 전사 후 Claude 추출 (`pip install graphifyy[video]` 필요) |
 | YouTube / URL | 모든 비디오 URL | yt-dlp로 오디오 다운로드 후 동일한 Whisper 파이프라인 (`pip install graphifyy[video]` 필요) |
+
+## 비디오 및 오디오 코퍼스
+
+코드와 문서 옆에 비디오 또는 오디오 파일을 코퍼스 폴더에 넣기만 하면 graphify가 자동으로 처리합니다:
+
+```bash
+pip install 'graphifyy[video]'   # 최초 1회 설치
+/graphify ./my-corpus            # 비디오/오디오 파일을 자동으로 전사
+```
+
+YouTube 동영상(또는 공개 비디오 URL)을 직접 추가할 수도 있습니다:
+
+```bash
+/graphify add <video-url>
+```
+
+yt-dlp가 오디오만 다운로드(빠르고 용량 작음)하고, Whisper가 로컬에서 전사한 뒤, 전사본이 다른 문서와 동일한 추출 파이프라인으로 처리됩니다. 전사본은 `graphify-out/transcripts/`에 캐시되므로 재실행 시 이미 전사된 파일은 건너뜁니다.
+
+기술적 내용의 정확도를 높이려면 더 큰 모델을 사용하세요:
+
+```bash
+/graphify ./my-corpus --whisper-model medium
+```
+
+오디오는 절대 사용자의 머신을 벗어나지 않습니다. 모든 전사는 로컬에서 실행됩니다.
 
 ## 결과물
 
@@ -293,8 +334,9 @@ graphify add https://... --author "Name" --contributor "Name"
 | Karpathy 리포지토리 + 논문 5편 + 이미지 4장 | 52 | **71.5x** | [`worked/karpathy-repos/`](worked/karpathy-repos/) |
 | graphify 소스 + Transformer 논문 | 4 | **5.4x** | [`worked/mixed-corpus/`](worked/mixed-corpus/) |
 | httpx (합성 Python 라이브러리) | 6 | ~1x | [`worked/httpx/`](worked/httpx/) |
+| 소규모 문서 파이프라인 (Python + markdown) | 7 | — | [`worked/example/`](worked/example/) — 직접 실행해보는 스타터 코퍼스 |
 
-토큰 축소는 코퍼스 크기에 비례하여 확장됩니다. 6개 파일은 어차피 컨텍스트 윈도우에 들어가므로, 그래프의 가치는 압축이 아닌 구조적 명확성에 있습니다. 52개 파일(코드 + 논문 + 이미지)에서는 71배 이상을 달성합니다. 각 `worked/` 폴더에는 원본 입력 파일과 실제 출력(`GRAPH_REPORT.md`, `graph.json`)이 있어 직접 실행하여 수치를 검증할 수 있습니다.
+토큰 축소는 코퍼스 크기에 비례하여 확장됩니다. 6개 파일은 어차피 컨텍스트 윈도우에 들어가므로, 그래프의 가치는 압축이 아닌 구조적 명확성에 있습니다. 52개 파일(코드 + 논문 + 이미지)에서는 71배 이상을 달성합니다. 각 `worked/` 폴더에는 원본 입력 파일이 있으며 (`worked/karpathy-repos/`는 예외 — 직접 clone·다운로드해야 하는 외부 GitHub 레포와 arXiv 논문으로 구성되어 있습니다, 해당 README 참고. `worked/example/`도 예외 — 직접 실행해보라는 취지의 스타터 코퍼스입니다), 나머지 폴더는 실제 출력(`GRAPH_REPORT.md`, `graph.json`)도 있어 직접 실행하여 수치를 검증할 수 있습니다.
 
 ## 개인정보 보호
 
@@ -302,7 +344,23 @@ graphify는 문서, 논문, 이미지의 의미적 추출을 위해 파일 내�
 
 ## 기술 스택
 
-NetworkX + Leiden (graspologic) + tree-sitter + vis.js. 의미적 추출은 Claude(Claude Code), GPT-4(Codex), 또는 플랫폼이 실행하는 모델을 통해 수행됩니다. Neo4j 불필요, 서버 불필요, 완전히 로컬에서 실행됩니다.
+NetworkX + Leiden (graspologic) + tree-sitter + vis.js. 의미적 추출은 Claude(Claude Code), GPT-4(Codex), 또는 플랫폼이 실행하는 모델을 통해 수행됩니다. 비디오 전사는 faster-whisper + yt-dlp를 통해 수행됩니다(선택 사항, `pip install graphifyy[video]`). Neo4j 불필요, 서버 불필요, 완전히 로컬에서 실행됩니다.
+
+## graphify 기반 구축 — Penpax
+
+[**Penpax**](https://safishamsi.github.io/penpax.ai)는 graphify 위에 구축된 엔터프라이즈 레이어입니다. graphify가 파일 폴더를 지식 그래프로 변환한다면, Penpax는 동일한 그래프를 전체 업무 생활에 — 지속적으로 — 적용합니다.
+
+| | graphify | Penpax |
+|---|---|---|
+| 입력 | 파일 폴더 | 브라우저 기록, 회의, 이메일, 파일, 코드 — 모든 것 |
+| 실행 | 필요 시 | 백그라운드에서 지속 실행 |
+| 범위 | 프로젝트 | 전체 업무 생활 |
+| 쿼리 | CLI / MCP / AI 스킬 | 자연어, 항상 작동 |
+| 개인정보 | 기본적으로 로컬 | 완전 온디바이스, 클라우드 없음 |
+
+변호사, 컨설턴트, 임원, 의사, 연구자 — 수백 개의 대화와 문서에 걸쳐 업무가 이루어지지만 완전히 재구성하기 어려운 모든 분들을 위해 개발되었습니다.
+
+**무료 체험 출시 예정.** [대기 목록 등록 →](https://safishamsi.github.io/penpax.ai)
 
 ## 다음 계획
 

@@ -22,7 +22,7 @@ We will acknowledge receipt within 48 hours and aim to release a fix within 7 da
 
 ## Security Model
 
-graphify is a **local development tool**. It runs as a Claude Code skill and optionally as a local MCP stdio server. It makes no network calls during graph analysis - only during `ingest` (explicit URL fetch by the user).
+graphify is a **local development tool**. It runs as an AI coding assistant skill (Claude Code, Codex, OpenCode, Cursor, Gemini CLI, GitHub Copilot CLI, Aider, OpenClaw, Factory Droid, Trae, Hermes, Google Antigravity) and optionally as a local MCP stdio server. It makes no network calls during graph analysis - only during `ingest` (explicit URL fetch by the user).
 
 ### Threat Surface
 
@@ -31,12 +31,12 @@ graphify is a **local development tool**. It runs as a Claude Code skill and opt
 | SSRF via URL fetch | `security.validate_url()` allows only `http` and `https` schemes, blocks private/loopback/link-local IPs, and blocks cloud metadata endpoints. Redirect targets are re-validated. All fetch paths including tweet oEmbed go through `safe_fetch()`. |
 | Oversized downloads | `safe_fetch()` streams responses and aborts at 50 MB. `safe_fetch_text()` aborts at 10 MB. |
 | Non-2xx HTTP responses | `safe_fetch()` raises `HTTPError` on non-2xx status codes - error pages are not silently treated as content. |
-| Path traversal in MCP server | The MCP server (`serve.py`) validates that the graph path resolves to an existing `.json` file. `security.validate_graph_path()` (used by other callers) additionally enforces containment inside `graphify-out/` and requires that directory to exist. |
-| XSS in graph HTML output | `security.sanitize_label()` strips control characters, caps at 256 chars, and HTML-escapes all node labels and edge titles before the vis.js renderer embeds them. |
+| Path traversal in graph loading | Graph-loading call sites in `__main__.py`/`serve.py` validate in-line, not uniformly: `query` (`__main__.py`) and the MCP server's `_load_graph()` (`serve.py`) require the resolved path to exist AND end in `.json`; `path` and `explain` (`__main__.py`) only require the path to exist (no `.json` suffix check). `security.validate_graph_path()` implements a stricter check (containment inside `graphify-out/`) but is not currently called by any of these — it exists as a unit-tested helper only (`tests/test_security.py`). <!-- DOC-SYNC: 2026-08-15 재검증 — 2026-08-12 주석은 4개 호출부가 동일하게 exists+suffix를 검사한다고 오기재; 실측으로 `path`/`explain`은 exists()만 검사함을 확인, 정정 --> |
+| XSS in graph HTML output | `security.sanitize_label()` strips control characters and caps at 256 chars; `export.py` additionally passes every node label, edge title, and community name through `html.escape()` before the vis.js renderer embeds them. |
 | Prompt injection via node labels | `sanitize_label()` also applied to MCP text output - node labels from user-controlled source files cannot break the text format returned to agents. |
 | YAML frontmatter injection | `_yaml_str()` escapes backslashes, double quotes, and newlines before embedding user-controlled strings (webpage titles, query questions) in YAML frontmatter. |
 | Encoding crashes on source files | All tree-sitter byte slices decoded with `errors="replace"` - non-UTF-8 source files degrade gracefully instead of crashing extraction. |
-| Symlink traversal | `os.walk(..., followlinks=False)` is explicit throughout `detect.py`. |
+| Symlink traversal | `detect()` takes a `follow_symlinks` parameter (default `False`, no CLI flag currently exposes `True`) that is passed straight through to `os.walk(..., followlinks=follow_symlinks)` in `detect.py`. |
 | Corrupted graph.json | `_load_graph()` in `serve.py` wraps `json.JSONDecodeError` and prints a clear recovery message instead of crashing. |
 
 ### What graphify does NOT do

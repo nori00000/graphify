@@ -113,7 +113,7 @@ After building a graph, run this once in your project:
 
 **Cursor** writes `.cursor/rules/graphify.mdc` with `alwaysApply: true` — Cursor includes it in every conversation automatically, no hook needed.
 
-**Gemini CLI** copies the skill to `~/.gemini/skills/graphify/SKILL.md`, writes a `GEMINI.md` section, and installs a `BeforeTool` hook in `.gemini/settings.json` that fires before file-read tool calls — same always-on mechanism as Claude Code.
+**Gemini CLI** copies the skill to `~/.gemini/skills/graphify/SKILL.md`, writes a `GEMINI.md` section, and installs a `BeforeTool` hook in `.gemini/settings.json` that fires before `read_file` and `list_directory` tool calls — same always-on mechanism as Claude Code.
 
 **Aider, OpenClaw, Factory Droid, Trae, and Hermes** write the same rules to `AGENTS.md` in your project root. These platforms don't support tool hooks, so AGENTS.md is the always-on mechanism. To also copy the skill file to the platform's global skill directory, run `graphify install --platform <platform>` separately.
 
@@ -237,7 +237,9 @@ graphify hook status
 graphify claude install            # CLAUDE.md + PreToolUse hook (Claude Code)
 graphify claude uninstall
 graphify codex install             # AGENTS.md (Codex)
+graphify codex uninstall
 graphify opencode install          # AGENTS.md + tool.execute.before plugin (OpenCode)
+graphify opencode uninstall
 graphify cursor install            # .cursor/rules/graphify.mdc (Cursor)
 graphify cursor uninstall
 graphify gemini install            # GEMINI.md + BeforeTool hook (Gemini CLI)
@@ -275,6 +277,11 @@ graphify add https://... --author "Name" --contributor "Name"
 graphify watch ./src                         # auto-rebuild on code changes
 graphify update ./src                        # re-extract code files, no LLM needed
 graphify cluster-only ./my-project           # rerun clustering on existing graph.json
+graphify benchmark                           # measure token reduction vs reading raw corpus
+graphify benchmark path/to/graph.json        # benchmark a specific graph file
+
+# save a Q&A result for graph feedback loop
+graphify save-result --question "Q" --answer "A" --type code
 ```
 
 Works with any mix of file types:
@@ -345,8 +352,9 @@ Audio never leaves your machine. All transcription runs locally.
 | Karpathy repos + 5 papers + 4 images | 52 | **71.5x** | [`worked/karpathy-repos/`](worked/karpathy-repos/) |
 | graphify source + Transformer paper | 4 | **5.4x** | [`worked/mixed-corpus/`](worked/mixed-corpus/) |
 | httpx (synthetic Python library) | 6 | ~1x | [`worked/httpx/`](worked/httpx/) |
+| Small doc pipeline (Python + markdown) | 7 | — | [`worked/example/`](worked/example/) — starter corpus, run it yourself |
 
-Token reduction scales with corpus size. 6 files fits in a context window anyway, so graph value there is structural clarity, not compression. At 52 files (code + papers + images) you get 71x+. Each `worked/` folder has the raw input files and the actual output (`GRAPH_REPORT.md`, `graph.json`) so you can run it yourself and verify the numbers.
+Token reduction scales with corpus size. 6 files fits in a context window anyway, so graph value there is structural clarity, not compression. At 52 files (code + papers + images) you get 71x+. Each `worked/` folder has the raw input files (except `worked/karpathy-repos/`, which sources third-party GitHub repos and arXiv papers you clone/download yourself — see its README), and (except `worked/example/`, a starter corpus meant to be run yourself) the actual output (`GRAPH_REPORT.md`, `graph.json`) so you can verify the numbers.
 
 ## Privacy
 

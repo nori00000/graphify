@@ -430,7 +430,7 @@ def detect(root: Path, *, follow_symlinks: bool = False) -> dict:
         warning = (
             f"Large corpus: {total_files} files · ~{total_words:,} words. "
             f"Semantic extraction will be expensive (many Claude tokens). "
-            f"Consider running on a subfolder, or use --no-semantic to run AST-only."
+            f"Consider running on a subfolder to reduce token cost."
         )
 
     return {
