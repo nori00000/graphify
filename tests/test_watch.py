@@ -3,6 +3,7 @@ import json
 import os
 import subprocess
 import sys
+import threading
 import time
 from pathlib import Path
 import pytest
@@ -1242,6 +1243,54 @@ def test_drain_pending_dedupes_and_skips_blank_lines(tmp_path):
 
     drained = _drain_pending(out)
     assert drained == [Path("a.py"), Path("b.py"), Path("c.py")]
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="fcntl-only (POSIX)")
+def test_drain_pending_preserves_append_that_arrives_after_read(tmp_path, monkeypatch):
+    """An append between drain's read and unlink belongs to the next drain.
+
+    The delayed unlink makes the old read/unlink race deterministic: without
+    the queue lock, the writer finishes during that delay and its line is
+    deleted. With the lock it waits until unlink completes, creates a fresh
+    queue file, and is returned by the next drain.
+    """
+    from graphify import watch as watch_mod
+
+    out = tmp_path / "graphify-out"
+    pending = out / watch_mod._PENDING_FILENAME
+    watch_mod._queue_pending(out, [Path("early.py")])
+
+    read_complete = threading.Event()
+    writer_done = threading.Event()
+    original_read_text = Path.read_text
+    original_unlink = Path.unlink
+
+    def signal_after_read(path, *args, **kwargs):
+        raw = original_read_text(path, *args, **kwargs)
+        if path == pending:
+            read_complete.set()
+        return raw
+
+    def delayed_unlink(path, *args, **kwargs):
+        if path == pending:
+            # Give an unlocked writer ample time to append before deletion.
+            time.sleep(0.05)
+        return original_unlink(path, *args, **kwargs)
+
+    def append_late():
+        assert read_complete.wait(timeout=1)
+        watch_mod._queue_pending(out, [Path("late.py")])
+        writer_done.set()
+
+    monkeypatch.setattr(Path, "read_text", signal_after_read)
+    monkeypatch.setattr(Path, "unlink", delayed_unlink)
+    writer = threading.Thread(target=append_late)
+    writer.start()
+    assert watch_mod._drain_pending(out) == [Path("early.py")]
+    assert writer_done.wait(timeout=1)
+    writer.join(timeout=1)
+
+    assert watch_mod._drain_pending(out) == [Path("late.py")]
 
 
 def test_queue_pending_noop_on_empty_list(tmp_path):
