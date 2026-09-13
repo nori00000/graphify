@@ -12,7 +12,36 @@ from pathlib import Path
 # Single source of truth in graphify.paths (#1423); re-exported as _GRAPHIFY_OUT.
 from graphify.paths import GRAPHIFY_OUT as _GRAPHIFY_OUT
 _PENDING_FILENAME = ".pending_changes"
+_PENDING_LOCK_FILENAME = ".pending_changes.lock"
 _PENDING_DRAIN_MAX_PASSES = 20
+
+
+@contextlib.contextmanager
+def _pending_queue_lock(out_dir: Path):
+    """Serialize writers and drains of the post-commit pending queue.
+
+    A drain used to read ``.pending_changes`` and then unlink it.  An append
+    in that interval landed in the file which was about to be unlinked, so
+    its paths were lost.  A separate, stable lock file lets writers keep
+    using append mode while ensuring a drain's read/unlink is one operation.
+
+    On platforms without ``fcntl`` this remains best-effort, matching the
+    rebuild lock's existing Windows fallback.
+    """
+    try:
+        import fcntl
+    except ImportError:
+        yield
+        return
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    lock_path = out_dir / _PENDING_LOCK_FILENAME
+    with open(lock_path, "a+", encoding="utf-8") as fh:
+        fcntl.flock(fh.fileno(), fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(fh.fileno(), fcntl.LOCK_UN)
 
 
 def _queue_pending(out_dir: Path, changed_paths: list[Path]) -> None:
@@ -23,41 +52,41 @@ def _queue_pending(out_dir: Path, changed_paths: list[Path]) -> None:
     process drains this file before and after its rebuild and merges the
     contents with its own change set.
 
-    Opened in append mode so concurrent writers do not clobber each other on
-    POSIX; each ``write()`` of a small payload is effectively atomic. A
-    trailing newline is always written so partial-line corruption stays
-    confined to the offending entry and is skipped on drain.
+    Writers share a lock with drains, preventing an append from landing after
+    the drain reads the file but before it unlinks it. A trailing newline is
+    always written so partial-line corruption stays confined to the offending
+    entry and is skipped on drain.
     """
     if not changed_paths:
         return
     out_dir.mkdir(parents=True, exist_ok=True)
     pending = out_dir / _PENDING_FILENAME
     payload = "".join(f"{os.fspath(p)}\n" for p in changed_paths)
-    with open(pending, "a", encoding="utf-8") as fh:
-        fh.write(payload)
+    with _pending_queue_lock(out_dir):
+        with open(pending, "a", encoding="utf-8") as fh:
+            fh.write(payload)
 
 
 def _drain_pending(out_dir: Path) -> list[Path]:
-    """Read + unlink ``out_dir/.pending_changes`` and return deduplicated paths.
+    """Atomically read + unlink the pending queue and return deduplicated paths.
 
     Returns an empty list if the file does not exist. Empty/whitespace lines
     are silently skipped so a partial concurrent write that left only a
     fragment cannot poison the merge.
     """
     pending = out_dir / _PENDING_FILENAME
-    if not pending.exists():
-        return []
-    try:
-        raw = pending.read_text(encoding="utf-8")
-    except OSError:
-        return []
-    # Unlink BEFORE returning so a crash between read and process retains the
-    # data in the next caller's view via the lines we are about to return —
-    # i.e. losing the file after reading is fine, losing it before would be a
-    # bug. Use missing_ok to tolerate a racing drain on platforms where
-    # rename/unlink may interleave.
-    with contextlib.suppress(FileNotFoundError):
-        pending.unlink()
+    with _pending_queue_lock(out_dir):
+        if not pending.exists():
+            return []
+        try:
+            raw = pending.read_text(encoding="utf-8")
+        except OSError:
+            return []
+        # Holding _pending_queue_lock across both operations means a writer
+        # either appears in ``raw`` or appends to the newly-created queue once
+        # this unlink completes; it cannot be erased in between.
+        with contextlib.suppress(FileNotFoundError):
+            pending.unlink()
     seen: set[str] = set()
     out: list[Path] = []
     for line in raw.splitlines():
